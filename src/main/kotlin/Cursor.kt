@@ -11,7 +11,7 @@ class Cursor(
 
     // coerce clamp the cursor movement
 
-    fun set(row: Int, column: Int) {
+    fun set(column: Int, row: Int) {
         this.column = column.coerceIn(0, width - 1)
         this.row = row.coerceIn(0, height - 1)
     }
