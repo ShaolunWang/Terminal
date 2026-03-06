@@ -22,5 +22,11 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
     private var cursorRow: Int = 0
     var currentAttrs: CellAttr = CellAttr()
         private set
-    val cursor = Cursor(width, height)
+    private val cursor = Cursor(width, height)
+
+
+    // Cursor functions
+    public fun getCursorPosition(): Pair<Int, Int> {
+        return Pair(cursor.column, cursor.row)
+    }
 }
