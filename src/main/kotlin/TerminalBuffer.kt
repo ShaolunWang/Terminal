@@ -22,4 +22,5 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
     private var cursorRow: Int = 0
     var currentAttrs: CellAttr = CellAttr()
         private set
+    val cursor = Cursor(width, height)
 }
