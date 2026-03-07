@@ -1,11 +1,22 @@
 package org.example
 
 class Line(val width: Int) {
-    private val cells: Array<Cell> = Array(width) { Cell.EMPTY }
+    public val cells: ArrayList<Cell> = ArrayList(MutableList(width) { Cell.EMPTY })
     operator fun get(col: Int): Cell = cells[col]
     operator fun set(col: Int, cell: Cell) {
         cells[col] = cell
     }
+
+
+    override fun toString(): String {
+        return buildString {
+            for (cell in cells) {
+                // use Unicode null if cell is null
+                append(cell.char ?: '\u0000')
+            }
+        }
+    }
+
 }
 
 class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5000) {
@@ -15,18 +26,130 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
         require(maxScrollBack > 0) { "Max scroll back is negative: $maxScrollBack" }
     }
 
-    // using array since the screen is fixed size (for now!)
-    private val screen: Array<Line> = Array(height) { Line(width) }
-    private val scrollback: ArrayDeque<Line> = ArrayDeque()
-    private var cursorCol: Int = 0
-    private var cursorRow: Int = 0
+    // NOTE: I think for both of them intuitively ringbuffer sounds like a
+    // more intuitive data structure,
+    // However for the sake of simplicity I'd use ArrayDeque
+
+    private val screen: ArrayDeque<Line> = ArrayDeque<Line>(height).apply {
+        repeat(height) {
+            add(Line(width))
+        }
+    }
+    private val scrollback: ArrayDeque<Line> = ArrayDeque(maxScrollBack);
+    public fun getLineAsString(i: Int): String {
+        return screen[i].toString()
+    }
+
+    public fun getScrollBackSize(): Int {
+        return scrollback.size
+    }
+
+    public fun getScrollBackLineAsString(i: Int): String {
+        return scrollback[i].toString()
+    }
+
     var currentAttrs: CellAttr = CellAttr()
         private set
     private val cursor = Cursor(width, height)
 
+    /// scroll up function. Does not update cursor
+    private fun scrollUp() {
+        // it's ok if our scrollback buffer has nothing there
+        scrollback.removeFirstOrNull();
+        val line = screen.removeFirst();
+        // need to allocate a new line to the buffer
+        screen.addLast(Line(width))
+        scrollback.addLast(line)
+        // update the write cursor
+        cursor.setWriterPos(cursor.writeCol, cursor.writeRow - 1)
+        cursor.syncRender()
 
-    // Cursor functions
-    public fun getCursorPosition(): Pair<Int, Int> {
-        return Pair(cursor.column, cursor.row)
     }
+
+
+    /* Cursor functions */
+    public fun getWriteCursorPosition(): Pair<Int, Int> {
+        return cursor.writePosition()
+    }
+    public fun setWriteCursorPosition(x: Int, y: Int) {
+        cursor.setWriterPos(x, y)
+    }
+    /* edit functions */
+
+    // insert a character at latest cursor position
+    public fun writeChar(ch: Char) {
+        if (cursor.writeCol >= 0 && cursor.writeRow >= height) {
+            scrollUp()
+        }
+        cursor.syncRender()
+        val col = cursor.writeCol
+        val row = cursor.writeRow
+
+        screen[row][col] = Cell(ch, currentAttrs)
+        val (newCol, newRow) = cursor.advanceWrite()
+    }
+
+
+    // insert char at current cursor position
+    // NOTE: changing our implementation to ringbuffer
+    // would significantly reduce the cost of this function
+    fun insertChar(ch: Char) {
+        // need to check for scrollup because
+        // render
+        if (cursor.writeCol >= 0 && cursor.writeRow >= height) {
+            scrollUp()
+        }
+        var col = cursor.writeCol
+        var row = cursor.writeRow
+
+        // tempCell holds the character to insert on each line
+        var tempCell = Cell.EMPTY
+
+        // current line requires special handling
+        val currentLine = screen[cursor.writeRow]
+        currentLine.cells.add(col, Cell(ch, currentAttrs))
+        val hasEmptyCellCurrentLine = currentLine.cells.any { it.char == '\u0000' }
+        if (!hasEmptyCellCurrentLine) {
+            tempCell = currentLine.cells.removeLast()
+        } else {
+            currentLine.cells.removeLast()
+            return
+        }
+
+
+        for (row in (cursor.writeRow + 1) until screen.size) {
+            val line = screen[row]
+            if (tempCell != Cell.EMPTY) {
+                line.cells.add(0, tempCell)
+                // first we check whether there are nullchars in the line
+                // if there are we can call it a day
+                val hasEmptyCell = line.cells.any { it.char == '\u0000' }
+                if (hasEmptyCell) {
+                    tempCell = Cell.EMPTY
+                    line.cells.removeLast()
+                    break
+                } else {
+                    tempCell = line.cells.removeLast()
+                }
+            }
+
+        }
+        // this means that we need to scrollup
+        if (tempCell != Cell.EMPTY) {
+            scrollUp()
+            // only update the cursor here cus we scrolled up
+            row = height - 1
+            // NOTE: when we scroll up,
+            // we should automatically wrap the line
+            col = 0
+            val newLine = Line(width)
+            newLine.cells[0] = tempCell
+            screen.add(newLine)
+        } else {
+            cursor.advanceWrite()
+        }
+        // NOTE: we don't update the cursor since it's in place insert
+    }
+
+
 }
