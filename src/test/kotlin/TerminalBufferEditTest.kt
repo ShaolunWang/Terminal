@@ -3,7 +3,7 @@ package org.example
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
-class TerminalBufferTest {
+class TerminalBufferEditTest {
 
     private val nullString = "\u0000"
 
@@ -62,7 +62,7 @@ class TerminalBufferTest {
         // cursor should at line 2 (0-indexed), pos 3(0-indexed)
         assertEquals(Pair(3, 1), buf.getWriteCursorPosition())
     }
-    
+
     @Test
     fun `insertChar shifts and wraps within a line`() {
         val buf = TerminalBuffer(width = 5, height = 2)

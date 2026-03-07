@@ -137,11 +137,6 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
         // this means that we need to scrollup
         if (tempCell != Cell.EMPTY) {
             scrollUp()
-            // only update the cursor here cus we scrolled up
-            row = height - 1
-            // NOTE: when we scroll up,
-            // we should automatically wrap the line
-            col = 0
             val newLine = Line(width)
             newLine.cells[0] = tempCell
             screen.add(newLine)
