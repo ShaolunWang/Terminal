@@ -52,9 +52,40 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
         private set
     private val cursor = Cursor(width, height)
 
+    /// scroll up function. Does not update cursor
+    private fun scrollUp() {
+        // it's ok if our scrollback buffer has nothing there
+        scrollback.removeFirstOrNull();
+        val line = screen.removeFirst();
+        // need to allocate a new line to the buffer
+        screen.addLast(Line(width))
+        scrollback.addLast(line)
+        // update the write cursor
+        cursor.setWriterPos(cursor.writeCol, cursor.writeRow - 1)
+        cursor.syncRender()
 
-    // Cursor functions
-    public fun getCursorPosition(): Pair<Int, Int> {
-        return Pair(cursor.column, cursor.row)
+    }
+
+
+    /* Cursor functions */
+    public fun getWriteCursorPosition(): Pair<Int, Int> {
+        return cursor.writePosition()
+    }
+    public fun setWriteCursorPosition(x: Int, y: Int) {
+        cursor.setWriterPos(x, y)
+    }
+    /* edit functions */
+
+    // insert a character at latest cursor position
+    public fun writeChar(ch: Char) {
+        if (cursor.writeCol >= 0 && cursor.writeRow >= height) {
+            scrollUp()
+        }
+        cursor.syncRender()
+        val col = cursor.writeCol
+        val row = cursor.writeRow
+
+        screen[row][col] = Cell(ch, currentAttrs)
+        val (newCol, newRow) = cursor.advanceWrite()
     }
 }
