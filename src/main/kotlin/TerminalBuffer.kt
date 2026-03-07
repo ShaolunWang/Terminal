@@ -36,9 +36,7 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
         }
     }
     private val scrollback: ArrayDeque<Line> = ArrayDeque(maxScrollBack);
-    public fun getLineAsString(i: Int): String {
-        return screen[i].toString()
-    }
+
 
     public fun getScrollBackSize(): Int {
         return scrollback.size
@@ -81,6 +79,12 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
     }
 
     /* edit functions */
+    // fill a line with current set attr
+    public fun fillLine(row: Int, char: Char) {
+        for (col in 0 until width) {
+            screen[row][col] = Cell(char, currentAttrs)
+        }
+    }
 
     // insert a character at latest cursor position
     public fun writeChar(ch: Char) {
@@ -152,6 +156,11 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
         // NOTE: we don't update the cursor since it's in place insert
     }
 
+    /* cursor independent functions */
+    public fun insertBlankLine() {
+        scrollUp()
+    }
+
     /* cursor functions */
     fun moveCursorUp() {
         cursor.moveUp()
@@ -169,4 +178,68 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
         cursor.moveRight()
     }
 
+
+    public fun setAttr(attr: CellAttr) {
+        this.currentAttrs = attr
+    }
+
+    public fun screenToString(): String {
+        return screen.joinToString("\n") { line ->
+            line.toString()
+        }
+    }
+
+
+    public fun scrollbackToString(): String {
+        return scrollback.joinToString("\n") { it.toString() }
+    }
+
+    public fun getLineAsString(i: Int): String {
+        return screen[i].toString()
+    }
+
+    public fun charAtScreen(x: Int, y: Int): Char? {
+        return screen[y][x].char
+    }
+
+    public fun charAtScrollBack(x: Int, y: Int): Char? {
+        return scrollback[y][x].char
+    }
+
+    public fun attrAtScreen(x: Int, y: Int): CellAttr {
+        return screen[y][x].attr
+    }
+
+    public fun attrAtScrollBack(x: Int, y: Int): CellAttr {
+        return scrollback[y][x].attr
+    }
+
+    override fun toString(): String =
+        buildString {
+            append(scrollbackToString())
+            append("\n")
+            append(screenToString())
+        }
+
+
+    public fun clear() {
+        clearScreen()
+        clearScrollBack()
+    }
+
+    public fun clearScreen() {
+        screen.clear()
+        screen.apply {
+            repeat(height) {
+                add(Line(width))
+            }
+        }
+    }
+
+    public fun clearScrollBack() {
+        // it's ok to clear this
+        // since I *think* terminals usually renders by
+        // available scrollbacks
+        scrollback.clear()
+    }
 }

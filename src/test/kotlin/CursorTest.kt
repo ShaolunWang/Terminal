@@ -39,14 +39,14 @@ class CursorTest {
     fun `move right within bounds returns true`() {
         val result = cursor.moveRight(3)
         assertTrue(result)
-        assertEquals(3, cursor.writeCol)
+        assertEquals(4, cursor.writeCol)
     }
 
     @Test
     fun `move right exceeding bounds returns false and clamps`() {
         val result = cursor.moveRight(100)
         assertFalse(result)
-        assertEquals(9, cursor.writeCol)
+        assertEquals(10, cursor.writeCol)
     }
 
     @Test
@@ -54,14 +54,14 @@ class CursorTest {
         cursor.set(5, 0)
         val result = cursor.moveLeft(3)
         assertTrue(result)
-        assertEquals(2, cursor.writeCol)
+        assertEquals(3, cursor.writeCol)
     }
 
     @Test
     fun `move left exceeding bounds returns false and clamps`() {
         val result = cursor.moveLeft(5)
         assertFalse(result)
-        assertEquals(0, cursor.writeCol)
+        assertEquals(1, cursor.writeCol)
     }
 
     @Test

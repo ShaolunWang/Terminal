@@ -8,7 +8,7 @@ data class CellAttr(
 
 data class Cell(
     val char: Char? = null,
-    val attr: CellAttr = CellAttr()
+    var attr: CellAttr = CellAttr()
 
 ) {
     companion object {

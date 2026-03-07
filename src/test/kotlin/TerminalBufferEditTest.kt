@@ -5,150 +5,208 @@ import org.junit.jupiter.api.Test
 
 class TerminalBufferEditTest {
 
-    private val nullString = "\u0000"
 
-    @Test
-    fun `writeChar overwrites line without wrapping`() {
-        val buf = TerminalBuffer(width = 5, height = 3)
+    class TermBufferWritCharTest {
+        private val nullString = "\u0000"
 
-        // write "ABC"
-        buf.writeChar('A')
-        buf.writeChar('B')
-        buf.writeChar('C')
+        @Test
+        fun `writeChar overwrites line without wrapping`() {
+            val buf = TerminalBuffer(width = 5, height = 3)
 
-        assertEquals("ABC" + nullString.repeat(2), buf.getLineAsString(0))
-        assertEquals(Pair(3, 0), buf.getWriteCursorPosition())
+            // write "ABC"
+            buf.writeChar('A')
+            buf.writeChar('B')
+            buf.writeChar('C')
 
-        buf.writeChar('D')
-        buf.writeChar('E')
+            assertEquals("ABC" + nullString.repeat(2), buf.getLineAsString(0))
+            assertEquals(Pair(3, 0), buf.getWriteCursorPosition())
 
-        assertEquals("ABCDE", buf.getLineAsString(0))
-        assertEquals(Pair(0, 1), buf.getWriteCursorPosition())
-    }
+            buf.writeChar('D')
+            buf.writeChar('E')
 
-    @Test
-    fun `writeChar wraps to next line`() {
-        val buf = TerminalBuffer(width = 5, height = 3)
-
-        val text = "ABCDEFG"
-        for (ch in text) {
-            buf.writeChar(ch)
+            assertEquals("ABCDE", buf.getLineAsString(0))
+            assertEquals(Pair(0, 1), buf.getWriteCursorPosition())
         }
 
-        assertEquals("ABCDE", buf.getLineAsString(0))
-        assertEquals("FG" + nullString.repeat(3), buf.getLineAsString(1))
-        assertEquals(Pair(2, 1), buf.getWriteCursorPosition())
-    }
+        @Test
+        fun `writeChar wraps to next line`() {
+            val buf = TerminalBuffer(width = 5, height = 3)
 
-    @Test
-    fun `writeChar scrolls when bottom is reached`() {
-        val buf = TerminalBuffer(width = 5, height = 2, maxScrollBack = 10)
+            val text = "ABCDEFG"
+            for (ch in text) {
+                buf.writeChar(ch)
+            }
 
-        val text = "ABCDEFGHIJ" // fills both lines
-        for (ch in text) {
-            buf.writeChar(ch)
+            assertEquals("ABCDE", buf.getLineAsString(0))
+            assertEquals("FG" + nullString.repeat(3), buf.getLineAsString(1))
+            assertEquals(Pair(2, 1), buf.getWriteCursorPosition())
         }
 
-        // write more chars to trigger scroll
-        buf.writeChar('K')
-        buf.writeChar('L')
-        buf.writeChar('M')
+        @Test
+        fun `writeChar scrolls when bottom is reached`() {
+            val buf = TerminalBuffer(width = 5, height = 2, maxScrollBack = 10)
 
-        // scrollback test
-        assertEquals(1, buf.getScrollBackSize())
-        assertEquals("ABCDE", buf.getScrollBackLineAsString(0))
-        // second entry should have KLM+2*nullstring
-        assertEquals("KLM" + nullString.repeat(2), buf.getLineAsString(1))
-        // cursor should at line 2 (0-indexed), pos 3(0-indexed)
-        assertEquals(Pair(3, 1), buf.getWriteCursorPosition())
+            val text = "ABCDEFGHIJ" // fills both lines
+            for (ch in text) {
+                buf.writeChar(ch)
+            }
+
+            // write more chars to trigger scroll
+            buf.writeChar('K')
+            buf.writeChar('L')
+            buf.writeChar('M')
+
+            // scrollback test
+            assertEquals(1, buf.getScrollBackSize())
+            assertEquals("ABCDE", buf.getScrollBackLineAsString(0))
+            // second entry should have KLM+2*nullstring
+            assertEquals("KLM" + nullString.repeat(2), buf.getLineAsString(1))
+            // cursor should at line 2 (0-indexed), pos 3(0-indexed)
+            assertEquals(Pair(3, 1), buf.getWriteCursorPosition())
+        }
     }
 
-    @Test
-    fun `insertChar shifts and wraps within a line`() {
-        val buf = TerminalBuffer(width = 5, height = 2)
+    class TermBufferInsertCharTest {
 
-        // initial content: ABCDE
-        buf.writeChar('A')
-        buf.writeChar('B')
-        buf.writeChar('C')
-        buf.writeChar('D')
-        buf.writeChar('E')
+        private val nullString = "\u0000"
 
-        // move cursor to col=2, row=0
-        buf.setWriteCursorPosition(2, 0)
+        @Test
+        fun `insertChar shifts and wraps within a line`() {
+            val buf = TerminalBuffer(width = 5, height = 2)
 
-        // insert 'X'
-        buf.insertChar('X')
+            // initial content: ABCDE
+            buf.writeChar('A')
+            buf.writeChar('B')
+            buf.writeChar('C')
+            buf.writeChar('D')
+            buf.writeChar('E')
 
-        // expected:
-        // line 0: ABXCD
-        // line 1: E<empty><empty><empty><empty>
-        assertEquals("ABXCD", buf.getLineAsString(0))
-        assertEquals("E" + nullString.repeat(4), buf.getLineAsString(1))
-        assertEquals(Pair(3, 0), buf.getWriteCursorPosition())
+            // move cursor to col=2, row=0
+            buf.setWriteCursorPosition(2, 0)
+
+            // insert 'X'
+            buf.insertChar('X')
+
+            // expected:
+            // line 0: ABXCD
+            // line 1: E<empty><empty><empty><empty>
+            assertEquals("ABXCD", buf.getLineAsString(0))
+            assertEquals("E" + nullString.repeat(4), buf.getLineAsString(1))
+            assertEquals(Pair(3, 0), buf.getWriteCursorPosition())
+        }
+
+        @Test
+        fun `insertChar wraps to next line when end of line reached`() {
+            val buf = TerminalBuffer(width = 5, height = 2)
+
+            // fill first line completely
+            buf.writeChar('A')
+            buf.writeChar('B')
+            buf.writeChar('C')
+            buf.writeChar('D')
+            buf.writeChar('E')
+
+            // cursor at col=4, row=0
+            buf.setWriteCursorPosition(4, 0)
+
+            buf.insertChar('X')
+
+            // expected:
+            // line 0: ABCDX
+            // line 1: E<null>...
+            assertEquals("ABCDX", buf.getLineAsString(0))
+            assertEquals("E" + nullString.repeat(4), buf.getLineAsString(1))
+            assertEquals(Pair(0, 1), buf.getWriteCursorPosition()) // wrapped to next line
+        }
+
+        @Test
+        fun `insertChar scrolls when bottom is reached`() {
+            val buf = TerminalBuffer(width = 5, height = 2, maxScrollBack = 10)
+
+            // fill screen completely
+            buf.writeChar('A')
+            buf.writeChar('B')
+            buf.writeChar('C')
+            buf.writeChar('D')
+            buf.writeChar('E') // line 0
+            buf.writeChar('F')
+            buf.writeChar('G')
+            buf.writeChar('H')
+            buf.writeChar('I')
+            buf.writeChar('J') // line 1
+
+            // writer cursor at col=2, row=1
+            // buf.setCursorPosition(2, 1)
+
+            // insert 'X'
+            buf.insertChar('X')
+
+            // NOTE: I will admit this is very confusing
+            // After insertion first line should scroll into scrollback
+            // since we have 2 full lines, we trigger scrollback on insertion
+            // THEN we insert a newchar on line 1
+            // writer cursor then should be right after the newchar
+            assertEquals(1, buf.getScrollBackSize())
+            assertEquals("FGHIJ", buf.getLineAsString(0))
+            assertEquals("X" + nullString.repeat(4), buf.getLineAsString(1))
+            assertEquals(Pair(1, 1), buf.getWriteCursorPosition())
+
+            buf.setWriteCursorPosition(1, 0)
+            buf.insertChar('X')
+            assertEquals("FXGHI", buf.getLineAsString(0))
+            assertEquals("JX" + nullString.repeat(3), buf.getLineAsString(1))
+
+            assertEquals(Pair(2, 0), buf.getWriteCursorPosition())
+        }
     }
 
-    @Test
-    fun `insertChar wraps to next line when end of line reached`() {
-        val buf = TerminalBuffer(width = 5, height = 2)
+    class FillLineTest {
 
-        // fill first line completely
-        buf.writeChar('A')
-        buf.writeChar('B')
-        buf.writeChar('C')
-        buf.writeChar('D')
-        buf.writeChar('E')
+        @Test
+        fun `fillLine fills the entire line with the given character`() {
+            val buf = TerminalBuffer(width = 5, height = 3)
 
-        // cursor at col=4, row=0
-        buf.setWriteCursorPosition(4, 0)
+            // Fill the first line with 'X'
+            buf.fillLine(0, 'X')
 
-        buf.insertChar('X')
+            // Check that line 0 is filled with 'X'
+            assertEquals("XXXXX", buf.getLineAsString(0))
 
-        // expected:
-        // line 0: ABCDX
-        // line 1: E<null>...
-        assertEquals("ABCDX", buf.getLineAsString(0))
-        assertEquals("E" + nullString.repeat(4), buf.getLineAsString(1))
-        assertEquals(Pair(0, 1), buf.getWriteCursorPosition()) // wrapped to next line
+        }
     }
 
-    @Test
-    fun `insertChar scrolls when bottom is reached`() {
-        val buf = TerminalBuffer(width = 5, height = 2, maxScrollBack = 10)
+    class TerminalBufferClearTest {
 
-        // fill screen completely
-        buf.writeChar('A')
-        buf.writeChar('B')
-        buf.writeChar('C')
-        buf.writeChar('D')
-        buf.writeChar('E') // line 0
-        buf.writeChar('F')
-        buf.writeChar('G')
-        buf.writeChar('H')
-        buf.writeChar('I')
-        buf.writeChar('J') // line 1
+        @Test
+        fun `clearScreen wipes screen but keeps scrollback`() {
+            val buffer = TerminalBuffer(5, 3)
 
-        // writer cursor at col=2, row=1
-        // buf.setCursorPosition(2, 1)
 
-        // insert 'X'
-        buf.insertChar('X')
+            buffer.writeChar('H')
+            buffer.writeChar('H')
+            buffer.writeChar('H')
+            buffer.writeChar('H')
+            buffer.writeChar('H')
+            buffer.clearScreen()
 
-        // NOTE: I will admit this is very confusing
-        // After insertion first line should scroll into scrollback
-        // since we have 2 full lines, we trigger scrollback on insertion
-        // THEN we insert a newchar on line 1
-        // writer cursor then should be right after the newchar
-        assertEquals(1, buf.getScrollBackSize())
-        assertEquals("FGHIJ", buf.getLineAsString(0))
-        assertEquals("X" + nullString.repeat(4), buf.getLineAsString(1))
-        assertEquals(Pair(1, 1), buf.getWriteCursorPosition())
+            assertNull(buffer.charAtScreen(0, 0))
+        }
 
-        buf.setWriteCursorPosition(1, 0)
-        buf.insertChar('X')
-        assertEquals("FXGHI", buf.getLineAsString(0))
-        assertEquals("JX" + nullString.repeat(3), buf.getLineAsString(1))
+        @Test
+        fun `clear wipes screen and scrollback`() {
+            val buffer = TerminalBuffer(5, 3)
 
-        assertEquals(Pair(2, 0), buf.getWriteCursorPosition())
+            repeat(5) {
+                buffer.writeChar('H')
+                buffer.writeChar('H')
+                buffer.writeChar('H')
+                buffer.writeChar('H')
+                buffer.writeChar('H')
+            }
+            buffer.clear()
+
+            assertNull(buffer.charAtScreen(0, 0))
+            assertTrue(buffer.getScrollBackSize() == 0)
+        }
     }
 }
