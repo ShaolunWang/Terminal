@@ -15,38 +15,38 @@ class CursorTest {
 
     @Test
     fun `cursor starts at origin`() {
-        assertEquals(0, cursor.column)
-        assertEquals(0, cursor.row)
+        assertEquals(0, cursor.writeCol)
+        assertEquals(0, cursor.writeRow)
     }
 
     @Test
     fun `set cursor within bounds returns true`() {
         val result = cursor.set(3, 2)
         assertTrue(result)
-        assertEquals(3, cursor.column)
-        assertEquals(2, cursor.row)
+        assertEquals(3, cursor.writeCol)
+        assertEquals(2, cursor.writeRow)
     }
 
     @Test
     fun `set cursor outside bounds returns false and clamps`() {
         val result = cursor.set(50, -10)
         assertFalse(result)
-        assertEquals(9, cursor.column)
-        assertEquals(0, cursor.row)
+        assertEquals(9, cursor.writeCol)
+        assertEquals(0, cursor.writeRow)
     }
 
     @Test
     fun `move right within bounds returns true`() {
         val result = cursor.moveRight(3)
         assertTrue(result)
-        assertEquals(3, cursor.column)
+        assertEquals(3, cursor.writeCol)
     }
 
     @Test
     fun `move right exceeding bounds returns false and clamps`() {
         val result = cursor.moveRight(100)
         assertFalse(result)
-        assertEquals(9, cursor.column)
+        assertEquals(9, cursor.writeCol)
     }
 
     @Test
@@ -54,28 +54,28 @@ class CursorTest {
         cursor.set(5, 0)
         val result = cursor.moveLeft(3)
         assertTrue(result)
-        assertEquals(2, cursor.column)
+        assertEquals(2, cursor.writeCol)
     }
 
     @Test
     fun `move left exceeding bounds returns false and clamps`() {
         val result = cursor.moveLeft(5)
         assertFalse(result)
-        assertEquals(0, cursor.column)
+        assertEquals(0, cursor.writeCol)
     }
 
     @Test
     fun `move down within bounds returns true`() {
         val result = cursor.moveDown(2)
         assertTrue(result)
-        assertEquals(2, cursor.row)
+        assertEquals(2, cursor.writeRow)
     }
 
     @Test
     fun `move down exceeding bounds returns false and clamps`() {
         val result = cursor.moveDown(100)
         assertFalse(result)
-        assertEquals(4, cursor.row)
+        assertEquals(4, cursor.writeRow)
     }
 
     @Test
@@ -83,21 +83,21 @@ class CursorTest {
         cursor.set(0, 3)
         val result = cursor.moveUp(2)
         assertTrue(result)
-        assertEquals(1, cursor.row)
+        assertEquals(1, cursor.writeRow)
     }
 
     @Test
     fun `move up exceeding bounds returns false and clamps`() {
         val result = cursor.moveUp(5)
         assertFalse(result)
-        assertEquals(0, cursor.row)
+        assertEquals(0, cursor.writeRow)
     }
 
     @Test
     fun `reset returns cursor to origin`() {
         cursor.set(7, 4)
         cursor.reset()
-        assertEquals(0, cursor.column)
-        assertEquals(0, cursor.row)
+        assertEquals(0, cursor.writeCol)
+        assertEquals(0, cursor.writeRow)
     }
 }
