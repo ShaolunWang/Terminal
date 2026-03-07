@@ -65,14 +65,14 @@ class Cursor(
     fun moveLeft(n: Int = 1, updateWrite: Boolean = true): Boolean {
         val oldCol = renderCol
         renderCol = (renderCol - n).coerceAtLeast(0)
-        if (updateWrite) writeCol = renderCol
+        if (updateWrite) writeCol = renderCol + 1
         return (oldCol - n) >= 0
     }
 
     fun moveRight(n: Int = 1, updateWrite: Boolean = true): Boolean {
         val oldCol = renderCol
         renderCol = (renderCol + n).coerceAtMost(width - 1)
-        if (updateWrite) writeCol = renderCol
+        if (updateWrite) writeCol = renderCol + 1
         return (oldCol + n) < width
     }
 

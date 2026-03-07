@@ -71,9 +71,15 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
     public fun getWriteCursorPosition(): Pair<Int, Int> {
         return cursor.writePosition()
     }
+
     public fun setWriteCursorPosition(x: Int, y: Int) {
         cursor.setWriterPos(x, y)
     }
+
+    public fun getCursorPosition(): Pair<Int, Int> {
+        return cursor.renderPosition()
+    }
+
     /* edit functions */
 
     // insert a character at latest cursor position
@@ -146,5 +152,21 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
         // NOTE: we don't update the cursor since it's in place insert
     }
 
+    /* cursor functions */
+    fun moveCursorUp() {
+        cursor.moveUp()
+    }
+
+    fun moveCursorDown() {
+        cursor.moveDown()
+    }
+
+    fun moveCursorLeft() {
+        cursor.moveLeft()
+    }
+
+    fun moveCursorRight() {
+        cursor.moveRight()
+    }
 
 }
