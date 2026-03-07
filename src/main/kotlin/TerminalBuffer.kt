@@ -88,4 +88,68 @@ class TerminalBuffer(val width: Int, val height: Int, val maxScrollBack: Int = 5
         screen[row][col] = Cell(ch, currentAttrs)
         val (newCol, newRow) = cursor.advanceWrite()
     }
+
+
+    // insert char at current cursor position
+    // NOTE: changing our implementation to ringbuffer
+    // would significantly reduce the cost of this function
+    fun insertChar(ch: Char) {
+        // need to check for scrollup because
+        // render
+        if (cursor.writeCol >= 0 && cursor.writeRow >= height) {
+            scrollUp()
+        }
+        var col = cursor.writeCol
+        var row = cursor.writeRow
+
+        // tempCell holds the character to insert on each line
+        var tempCell = Cell.EMPTY
+
+        // current line requires special handling
+        val currentLine = screen[cursor.writeRow]
+        currentLine.cells.add(col, Cell(ch, currentAttrs))
+        val hasEmptyCellCurrentLine = currentLine.cells.any { it.char == '\u0000' }
+        if (!hasEmptyCellCurrentLine) {
+            tempCell = currentLine.cells.removeLast()
+        } else {
+            currentLine.cells.removeLast()
+            return
+        }
+
+
+        for (row in (cursor.writeRow + 1) until screen.size) {
+            val line = screen[row]
+            if (tempCell != Cell.EMPTY) {
+                line.cells.add(0, tempCell)
+                // first we check whether there are nullchars in the line
+                // if there are we can call it a day
+                val hasEmptyCell = line.cells.any { it.char == '\u0000' }
+                if (hasEmptyCell) {
+                    tempCell = Cell.EMPTY
+                    line.cells.removeLast()
+                    break
+                } else {
+                    tempCell = line.cells.removeLast()
+                }
+            }
+
+        }
+        // this means that we need to scrollup
+        if (tempCell != Cell.EMPTY) {
+            scrollUp()
+            // only update the cursor here cus we scrolled up
+            row = height - 1
+            // NOTE: when we scroll up,
+            // we should automatically wrap the line
+            col = 0
+            val newLine = Line(width)
+            newLine.cells[0] = tempCell
+            screen.add(newLine)
+        } else {
+            cursor.advanceWrite()
+        }
+        // NOTE: we don't update the cursor since it's in place insert
+    }
+
+
 }
